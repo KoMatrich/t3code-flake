@@ -90,43 +90,27 @@ jobs:
           ./result/bin/t3 --help > /dev/null
           nix build .#t3code-desktop --no-link
 
-  propose:
+  # Fork deviation: push the validated bump straight to main instead of opening
+  # a PR, so a new T3 Code release lands with no manual step.
+  publish:
     needs: [update, validate]
     if: needs.update.outputs.changed == 'true'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
-          persist-credentials: false
       - name: Confirm validated base
         run: test "$(git rev-parse HEAD)" = "${{ needs.update.outputs.base_sha }}"
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: t3code-sources
-      # Checks on a GITHUB_TOKEN-created PR can await approval; native builds finish above.
-      - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
-        with:
-          token: ${{ github.token }}
-          branch: automation/update-t3code
-          base: main
-          add-paths: sources.json
-          commit-message: "chore: update t3code to v${{ needs.update.outputs.new }}"
-          title: "chore: update t3code to v${{ needs.update.outputs.new }}"
-          body: |
-            Updates T3 Code from v${{ needs.update.outputs.old }} to v${{ needs.update.outputs.new }}.
-
-            Upstream release: https://github.com/pingdotgg/t3code/releases/tag/v${{ needs.update.outputs.new }}
-
-            Assets updated:
-            - `t3-${{ needs.update.outputs.new }}-linux-x64.tar.gz`
-            - `t3-${{ needs.update.outputs.new }}-linux-arm64.tar.gz`
-            - `T3-Code-${{ needs.update.outputs.new }}-x86_64.AppImage`
-            - `T3-Code-${{ needs.update.outputs.new }}-arm64.AppImage`
-
-            The upstream `SHA256SUMS` entries for both CLI archives were verified before calculating Nix hashes.
-
-            Validated natively on `x86_64-linux` (`ubuntu-24.04`) and `aarch64-linux` (`ubuntu-24.04-arm`): `nix flake check`, `nix build .#t3code`, `t3 --version`, `t3 --help`, and `nix build .#t3code-desktop`.
+      - name: Commit to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sources.json
+          git commit -m "chore: update t3code to v${{ needs.update.outputs.new }}"
+          git push origin HEAD:main
