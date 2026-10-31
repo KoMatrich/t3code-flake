@@ -61,7 +61,7 @@ appimageTools.wrapType2 {
     mkdir -p "$out/share/applications" "$out/share/icons"
     cp ${extracted}/t3code.desktop "$out/share/applications/t3code.desktop"
     substituteInPlace "$out/share/applications/t3code.desktop" \
-      --replace-fail 'Exec=AppRun --no-sandbox %U' 'Exec=t3code-desktop %U'
+      --replace-fail 'Exec=AppRun %U' 'Exec=t3code-desktop %U'
     cp -R ${extracted}/usr/share/icons/hicolor "$out/share/icons/"
 
     mv "$out/bin/t3code-desktop" "$out/bin/t3code-desktop-unwrapped"
